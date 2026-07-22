@@ -141,11 +141,17 @@ function renderResults(data) {
   const negativeWeeks = weeks.filter((w) => w.netNegative);
   const firstNegativeWeek = negativeWeeks.length ? negativeWeeks[0].week : null;
 
+  const heroCls = impact > 0 ? "bad" : "good";
+  $("heroStat").innerHTML = `
+    <div class="hero-figure ${heroCls}">
+      <div class="hero-label">Financial impact of overtime<br>over ${weeks.length} week${weeks.length === 1 ? "" : "s"}</div>
+      <div class="hero-value">${fmtMoney(impact)}</div>
+      <div class="hero-sub">${fmtPct(impactPct)} above the equivalent straight-time cost</div>
+    </div>`;
+
   const cards = [
     { label: "Total wages paid", value: fmtMoney(totalPaid), cls: "" },
     { label: "Equivalent cost at straight time (no OT)", value: fmtMoney(equivCost), cls: "good" },
-    { label: "Financial impact of overtime", value: fmtMoney(impact), cls: impact > 0 ? "bad" : "good" },
-    { label: "Impact as % of equivalent cost", value: fmtPct(impactPct), cls: impactPct > 0 ? "warn" : "good" },
   ];
 
   if (firstNegativeWeek) {
@@ -154,6 +160,8 @@ function renderResults(data) {
       value: `Week ${firstNegativeWeek}`,
       cls: "bad"
     });
+  } else {
+    cards.push({ label: "Net-negative overtime begins", value: "Not reached", cls: "good" });
   }
 
   $("resultCards").innerHTML = cards
@@ -195,13 +203,16 @@ function drawChart(weeks) {
   const maxCost = Math.max(...weeks.map((w) => w.cumCostPaid), 1);
   const maxLoss = Math.max(...weeks.map((w) => w.lossPct), 1);
 
-  const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const gridColor = isDark ? "#2a313d" : "#e2e6ec";
-  const textColor = isDark ? "#9aa5b3" : "#5b6675";
+  const style = getComputedStyle(document.documentElement);
+  const gridColor = style.getPropertyValue("--line").trim() || "#c6d0da";
+  const textColor = style.getPropertyValue("--muted").trim() || "#5c697b";
+  const accentColor = style.getPropertyValue("--accent").trim() || "#2f5d8a";
+  const goodColor = style.getPropertyValue("--good").trim() || "#3f7d58";
+  const signalColor = style.getPropertyValue("--signal").trim() || "#c8622d";
 
   ctx.strokeStyle = gridColor;
   ctx.fillStyle = textColor;
-  ctx.font = "11px sans-serif";
+  ctx.font = "11px ui-monospace, monospace";
   ctx.lineWidth = 1;
 
   const gridLines = 5;
@@ -232,11 +243,11 @@ function drawChart(weeks) {
     ctx.stroke();
   }
 
-  plotLine((w) => w.cumCostPaid, "#2f6fed");
-  plotLine((w) => w.equivalentStraightCost, "#1f9d55");
+  plotLine((w) => w.cumCostPaid, accentColor);
+  plotLine((w) => w.equivalentStraightCost, goodColor);
 
   ctx.beginPath();
-  ctx.strokeStyle = "#d64545";
+  ctx.strokeStyle = signalColor;
   ctx.setLineDash([4, 3]);
   ctx.lineWidth = 1.5;
   weeks.forEach((w, i) => {
@@ -278,6 +289,10 @@ function init() {
   ["crewSize", "baseRate", "otMultiplier", "regHours", "duration"].forEach((id) => {
     $(id).addEventListener("input", recalculate);
   });
+
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", recalculate);
+  }
 
   $("duration").addEventListener("input", () => {
     const duration = Math.max(1, parseInt($("duration").value, 10) || 1);
