@@ -89,6 +89,23 @@ header {
   margin-bottom: 24px;
 }
 
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.print-btn {
+  margin-top: 2px;
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--panel);
+  border: 1px solid var(--accent);
+}
+
+.print-only { display: none; }
+
 header h1 {
   margin: 0 0 8px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -156,6 +173,14 @@ header h1 {
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px;
   margin-bottom: 10px;
+}
+
+.wide-field {
+  grid-column: span 2;
+}
+
+@media (max-width: 480px) {
+  .wide-field { grid-column: span 1; }
 }
 
 label {
@@ -375,4 +400,76 @@ footer {
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+}
+
+@media print {
+  @page {
+    margin: 1.4cm;
+  }
+
+  :root {
+    --paper: #ffffff;
+    --panel: #ffffff;
+    --ink: #182233;
+    --muted: #5c697b;
+    --line: #b7c1cc;
+    --accent: #2f5d8a;
+    --accent-soft: #dde7f1;
+    --signal: #c8622d;
+    --signal-soft: #f7e6da;
+    --good: #3f7d58;
+    --good-soft: #e0efe5;
+  }
+
+  body { background: #fff; }
+
+  .wrap { max-width: none; padding: 0; }
+
+  .print-btn,
+  #resetCurve,
+  .badge {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+
+  .print-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin-bottom: 3px;
+  }
+
+  .print-meta-row strong { color: var(--ink); }
+
+  .panel {
+    border: 1px solid var(--line);
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  input, select {
+    border: none;
+    background: transparent;
+    padding: 2px 0;
+    color: var(--ink);
+    font-weight: 700;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  table { font-size: 0.76rem; }
+
+  .table-scroll { overflow: visible; border: 1px solid var(--line); }
+
+  canvas {
+    border: 1px solid var(--line);
+  }
+
+  a[href]::after { content: ""; }
 }

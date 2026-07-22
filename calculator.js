@@ -88,26 +88,34 @@ function computeWeeklyData() {
   const scheduledHours = currentCurve.hours;
   const duration = Math.max(1, parseInt($("duration").value, 10) || 1);
 
+  const otShareInput = parseFloat($("otShare").value);
+  const otSharePct = isNaN(otShareInput) ? 100 : Math.min(100, Math.max(0, otShareInput));
+  const otCrewSize = crewSize * (otSharePct / 100);
+  const regCrewSize = crewSize - otCrewSize;
+
   const otHoursPerWeek = Math.max(0, scheduledHours - regHours);
   const regHoursApplied = Math.min(scheduledHours, regHours);
 
   const weeks = [];
   let cumCostPaid = 0;
   let cumEffectiveHoursCrew = 0; // total across crew
-  let cumScheduledHoursCrew = 0;
 
   for (let w = 0; w < duration; w++) {
     const lossPct = lossForWeek(w);
     const effectiveHoursPerWorker = scheduledHours * (1 - lossPct / 100);
-    const weeklyWagePerWorker = regHoursApplied * baseRate + otHoursPerWeek * baseRate * otMult;
+    const weeklyWagePerOtWorker = regHoursApplied * baseRate + otHoursPerWeek * baseRate * otMult;
+    const weeklyWagePerRegWorker = regHours * baseRate;
 
-    const weekCostCrew = weeklyWagePerWorker * crewSize;
-    const weekEffectiveHoursCrew = effectiveHoursPerWorker * crewSize;
-    const weekScheduledHoursCrew = scheduledHours * crewSize;
+    const weekCostOtCrew = weeklyWagePerOtWorker * otCrewSize;
+    const weekCostRegCrew = weeklyWagePerRegWorker * regCrewSize;
+    const weekCostCrew = weekCostOtCrew + weekCostRegCrew;
+
+    const weekEffectiveHoursOtCrew = effectiveHoursPerWorker * otCrewSize;
+    const weekEffectiveHoursRegCrew = regHours * regCrewSize;
+    const weekEffectiveHoursCrew = weekEffectiveHoursOtCrew + weekEffectiveHoursRegCrew;
 
     cumCostPaid += weekCostCrew;
     cumEffectiveHoursCrew += weekEffectiveHoursCrew;
-    cumScheduledHoursCrew += weekScheduledHoursCrew;
 
     const equivalentStraightCost = cumEffectiveHoursCrew * baseRate;
     const overtimeImpact = cumCostPaid - equivalentStraightCost;
@@ -126,11 +134,14 @@ function computeWeeklyData() {
     });
   }
 
-  return { weeks, crewSize, baseRate, otMult, regHours, scheduledHours, otHoursPerWeek, duration };
+  return {
+    weeks, crewSize, otCrewSize, regCrewSize, otSharePct,
+    baseRate, otMult, regHours, scheduledHours, otHoursPerWeek, duration
+  };
 }
 
 function renderResults(data) {
-  const { weeks, baseRate } = data;
+  const { weeks, baseRate, crewSize, otCrewSize, regCrewSize, otSharePct } = data;
   const last = weeks[weeks.length - 1];
 
   const totalPaid = last.cumCostPaid;
@@ -152,6 +163,11 @@ function renderResults(data) {
   const cards = [
     { label: "Total wages paid", value: fmtMoney(totalPaid), cls: "" },
     { label: "Equivalent cost at straight time (no OT)", value: fmtMoney(equivCost), cls: "good" },
+    {
+      label: "Crew on OT schedule",
+      value: `${fmtPct(otSharePct)} (${otCrewSize.toFixed(1)} of ${crewSize})`,
+      cls: ""
+    },
   ];
 
   if (firstNegativeWeek) {
@@ -267,10 +283,31 @@ function drawChart(weeks) {
   });
 }
 
+function renderPrintMeta(data) {
+  const scheduleLabel = PRESETS[$("scheduleSelect").value]
+    ? PRESETS[$("scheduleSelect").value].label
+    : `${data.scheduledHours} hrs/wk`;
+  const generated = new Date().toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+  $("printMeta").innerHTML = `
+    <div class="print-meta-row">
+      <span><strong>Crew:</strong> ${data.crewSize} workers</span>
+      <span><strong>On OT:</strong> ${fmtPct(data.otSharePct)} (${data.otCrewSize.toFixed(1)} workers)</span>
+      <span><strong>Base rate:</strong> $${data.baseRate.toFixed(2)}/hr</span>
+      <span><strong>OT multiplier:</strong> ${data.otMult}x</span>
+      <span><strong>Schedule:</strong> ${scheduleLabel}</span>
+      <span><strong>Duration:</strong> ${data.duration} week${data.duration === 1 ? "" : "s"}</span>
+    </div>
+    <div class="print-meta-row"><span>Report generated ${generated}</span></div>`;
+}
+
 function recalculate() {
   if (!currentCurve) return;
   const data = computeWeeklyData();
   renderResults(data);
+  renderPrintMeta(data);
 }
 
 function init() {
@@ -286,7 +323,7 @@ function init() {
     loadCurveFromPreset(key);
   });
 
-  ["crewSize", "baseRate", "otMultiplier", "regHours", "duration"].forEach((id) => {
+  ["crewSize", "baseRate", "otMultiplier", "regHours", "otShare", "duration"].forEach((id) => {
     $(id).addEventListener("input", recalculate);
   });
 
@@ -302,6 +339,10 @@ function init() {
     renderCurveTable();
     recalculate();
   });
+
+  $("printBtn").addEventListener("click", () => window.print());
+  window.addEventListener("beforeprint", recalculate);
+  window.addEventListener("afterprint", recalculate);
 }
 
 document.addEventListener("DOMContentLoaded", init);

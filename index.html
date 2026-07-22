@@ -10,10 +10,16 @@
 <div class="wrap">
 
   <header>
-    <h1>Overtime Financial Impact Calculator</h1>
-    <p class="subtitle">Estimates the true cost of sustained scheduled overtime on a project, combining
-      overtime wage premiums with the labor-productivity loss documented in construction-industry
-      overtime studies (NECA / Business Roundtable "scheduled overtime effect" curves).</p>
+    <div class="header-row">
+      <div>
+        <h1>Overtime Financial Impact Calculator</h1>
+        <p class="subtitle">Estimates the true cost of sustained scheduled overtime on a project, combining
+          overtime wage premiums with the labor-productivity loss documented in construction-industry
+          overtime studies (NECA / Business Roundtable "scheduled overtime effect" curves).</p>
+      </div>
+      <button id="printBtn" type="button" class="print-btn">Print Report</button>
+    </div>
+    <div class="print-only" id="printMeta"></div>
   </header>
 
   <main>
@@ -32,7 +38,10 @@
         <label>Regular hours / week
           <input type="number" id="regHours" value="40" min="1" step="1">
         </label>
-        <label>Scheduled work week (hrs)
+        <label>Share of crew working OT (%)
+          <input type="number" id="otShare" value="100" min="0" max="100" step="1">
+        </label>
+        <label class="wide-field">Scheduled work week (hrs)
           <select id="scheduleSelect"></select>
         </label>
         <label>Duration of sustained OT (weeks)
@@ -40,7 +49,9 @@
         </label>
       </div>
       <p class="hint">"Scheduled work week" picks a preset productivity-loss curve below. Choose "Custom"
-        to type your own weekly hours and edit the loss-percentage curve directly.</p>
+        to type your own weekly hours and edit the loss-percentage curve directly. "Share of crew working OT"
+        lets you model a crew where only part of the workforce is on the overtime schedule — the remainder
+        is assumed to keep working a regular week at full efficiency.</p>
     </section>
 
     <section class="panel" id="curve-panel">
@@ -95,6 +106,10 @@
         <li>If effective hours in a week fall below the regular work week, that week's overtime is
           flagged as net-negative: the crew produced less usable output than if they had simply worked
           a standard week, a well-documented risk of extended sustained overtime.</li>
+        <li>"Share of crew working OT" splits the crew in two: the OT portion is paid the scheduled
+          hours (with the overtime premium) and takes the productivity-loss curve; the remaining portion
+          is assumed to keep working a regular week at the base rate with no productivity loss. All
+          totals and the financial-impact figure are computed across the blended crew.</li>
         <li>This tool is a planning aid. It does not account for absenteeism, turnover, safety-incident
           costs, rework/quality costs beyond the modeled productivity loss, or schedule-specific NECA
           tables (5x10, 6x10, 6x12, 7x12, etc.) beyond the presets provided — adjust the curve table for
