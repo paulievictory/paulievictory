@@ -41,10 +41,21 @@ function populateScheduleSelect() {
   sel.value = "60";
 }
 
+function syncCustomHoursVisibility(key) {
+  const customHoursInput = $("customHours");
+  if (key === "custom") {
+    customHoursInput.style.display = "block";
+    customHoursInput.value = currentCurve.hours;
+  } else {
+    customHoursInput.style.display = "none";
+  }
+}
+
 function loadCurveFromPreset(key) {
   const preset = PRESETS[key];
   currentCurve = { hours: preset.hours, loss: [...preset.loss] };
   $("scheduleSelect").value = key;
+  syncCustomHoursVisibility(key);
   renderCurveTable();
   recalculate();
 }
@@ -284,9 +295,10 @@ function drawChart(weeks) {
 }
 
 function renderPrintMeta(data) {
-  const scheduleLabel = PRESETS[$("scheduleSelect").value]
-    ? PRESETS[$("scheduleSelect").value].label
-    : `${data.scheduledHours} hrs/wk`;
+  const scheduleKey = $("scheduleSelect").value;
+  const scheduleLabel = scheduleKey === "custom"
+    ? `Custom (${data.scheduledHours} hrs/wk)`
+    : (PRESETS[scheduleKey] ? PRESETS[scheduleKey].label : `${data.scheduledHours} hrs/wk`);
   const generated = new Date().toLocaleString(undefined, {
     dateStyle: "medium",
     timeStyle: "short"
@@ -316,6 +328,12 @@ function init() {
 
   $("scheduleSelect").addEventListener("change", (e) => {
     loadCurveFromPreset(e.target.value);
+  });
+
+  $("customHours").addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    currentCurve.hours = val > 0 ? val : 0;
+    recalculate();
   });
 
   $("resetCurve").addEventListener("click", () => {

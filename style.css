@@ -179,6 +179,11 @@ header h1 {
   grid-column: span 2;
 }
 
+.custom-hours {
+  display: none;
+  margin-top: 6px;
+}
+
 @media (max-width: 480px) {
   .wide-field { grid-column: span 1; }
 }
