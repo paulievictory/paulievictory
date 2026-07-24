@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overtime Financial Impact Calculator (NECA Method)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-row">
+      <div>
+        <h1>Overtime Financial Impact Calculator</h1>
+        <p class="subtitle">Estimates the true cost of sustained scheduled overtime on a project, combining
+          overtime wage premiums with the labor-productivity loss documented in construction-industry
+          overtime studies (NECA / Business Roundtable "scheduled overtime effect" curves).</p>
+      </div>
+      <button id="printBtn" type="button" class="print-btn">Print Report</button>
+    </div>
+    <div class="print-only" id="printMeta"></div>
+  </header>
+
+  <main>
+    <section class="panel" id="inputs-panel">
+      <h2>Project &amp; Crew Inputs</h2>
+      <div class="grid">
+        <label>Crew size (workers)
+          <input type="number" id="crewSize" value="20" min="1" step="1">
+        </label>
+        <label>Base hourly rate ($/hr)
+          <input type="number" id="baseRate" value="45" min="0" step="0.01">
+        </label>
+        <label>Overtime multiplier
+          <input type="number" id="otMultiplier" value="1.5" min="1" step="0.05">
+        </label>
+        <label>Regular hours / week
+          <input type="number" id="regHours" value="40" min="1" step="1">
+        </label>
+        <label>Share of crew working OT (%)
+          <input type="number" id="otShare" value="100" min="0" max="100" step="1">
+        </label>
+        <label class="wide-field">Scheduled work week (hrs)
+          <select id="scheduleSelect"></select>
+          <input type="number" id="customHours" min="1" step="1" placeholder="Custom hours/week" class="custom-hours">
+        </label>
+        <label>Duration of sustained OT (weeks)
+          <input type="number" id="duration" value="8" min="1" step="1">
+        </label>
+      </div>
+      <p class="hint">"Scheduled work week" picks a preset productivity-loss curve below. Choose "Custom"
+        to type your own weekly hours and edit the loss-percentage curve directly. "Share of crew working OT"
+        lets you model a crew where only part of the workforce is on the overtime schedule — the remainder
+        is assumed to keep working a regular week at full efficiency.</p>
+    </section>
+
+    <section class="panel" id="curve-panel">
+      <h2>Productivity-Loss Curve <span class="badge">editable</span></h2>
+      <p class="hint">
+        Default values are <strong>illustrative approximations</strong> of the shape reported by the
+        classic construction overtime-productivity studies (NECA's <em>Overtime and Productivity in
+        Electrical Construction</em> and the Business Roundtable Report C-2): productivity falls off
+        quickly in the first few weeks of sustained overtime, then levels off. For binding, contractual,
+        or claims work, replace these numbers with the exact table from your specific NECA reference
+        publication for the schedule in question.
+      </p>
+      <div class="table-scroll">
+        <table id="curveTable"></table>
+      </div>
+      <button id="resetCurve" type="button">Reset to preset default</button>
+    </section>
+
+    <section class="panel" id="results-panel">
+      <h2>Financial Impact</h2>
+      <div class="hero" id="heroStat"></div>
+      <div class="cards" id="resultCards"></div>
+
+      <h3>Weekly Breakdown</h3>
+      <div class="table-scroll">
+        <table id="weeklyTable"></table>
+      </div>
+
+      <h3>Cumulative Cost vs. Productive Output</h3>
+      <canvas id="chart" width="900" height="360"></canvas>
+      <p class="legend">
+        <span><i class="sw sw-cost"></i> Cumulative wage cost paid</span>
+        <span><i class="sw sw-equiv"></i> Cost of equivalent output at straight time</span>
+        <span><i class="sw sw-loss"></i> Weekly productivity loss %</span>
+      </p>
+    </section>
+
+    <section class="panel" id="notes-panel">
+      <h2>Methodology &amp; Assumptions</h2>
+      <ul>
+        <li>Each week, workers are paid for the full scheduled hours: regular hours at the base rate,
+          plus hours beyond the regular week at the overtime multiplier.</li>
+        <li>The productivity-loss % for a given week (from the curve above) is applied to the
+          <em>entire</em> scheduled week to get "effective" (actually productive) hours — this mirrors
+          how the NECA/Business Roundtable curves express cumulative efficiency loss under sustained
+          overtime, not just loss on the extra hours.</li>
+        <li>"Cost of equivalent output at straight time" asks: what would it cost, at the base hourly
+          rate with no overtime and no productivity loss, to produce the same amount of actual work?
+          The gap between that figure and what was actually paid is the <strong>financial impact of
+          overtime</strong> — the premium you paid on top of the wage premium itself, caused purely by
+          lost efficiency.</li>
+        <li>If effective hours in a week fall below the regular work week, that week's overtime is
+          flagged as net-negative: the crew produced less usable output than if they had simply worked
+          a standard week, a well-documented risk of extended sustained overtime.</li>
+        <li>"Share of crew working OT" splits the crew in two: the OT portion is paid the scheduled
+          hours (with the overtime premium) and takes the productivity-loss curve; the remaining portion
+          is assumed to keep working a regular week at the base rate with no productivity loss. All
+          totals and the financial-impact figure are computed across the blended crew.</li>
+        <li>This tool is a planning aid. It does not account for absenteeism, turnover, safety-incident
+          costs, rework/quality costs beyond the modeled productivity loss, or schedule-specific NECA
+          tables (5x10, 6x10, 6x12, 7x12, etc.) beyond the presets provided — adjust the curve table for
+          your actual schedule pattern and reference data.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built as a standalone, offline-capable HTML/JS tool — no external dependencies, no data leaves your browser.</p>
+  </footer>
+</div>
+
+<script src="calculator.js"></script>
+</body>
+</html>

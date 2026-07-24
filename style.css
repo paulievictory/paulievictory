@@ -1,0 +1,480 @@
+/* Overtime Financial Impact Calculator — "job-cost ledger" design system.
+   Palette and type are chosen for a construction cost-report register:
+   steel-blueprint blue as the working accent, a rust/safety-orange signal
+   for the cost figures the tool exists to surface, tabular monospace for
+   every number so ledger columns line up like a real cost report. */
+
+:root {
+  --paper: #eef1f5;
+  --panel: #ffffff;
+  --ink: #182233;
+  --muted: #5c697b;
+  --line: #c6d0da;
+  --accent: #2f5d8a;
+  --accent-soft: #dde7f1;
+  --signal: #c8622d;
+  --signal-soft: #f7e6da;
+  --good: #3f7d58;
+  --good-soft: #e0efe5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1520;
+    --panel: #161e2b;
+    --ink: #e7ecf3;
+    --muted: #9aabc0;
+    --line: #2a3547;
+    --accent: #6ea3d6;
+    --accent-soft: #1c2c3f;
+    --signal: #e2894f;
+    --signal-soft: #33241a;
+    --good: #5fb583;
+    --good-soft: #16281e;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #0f1520;
+  --panel: #161e2b;
+  --ink: #e7ecf3;
+  --muted: #9aabc0;
+  --line: #2a3547;
+  --accent: #6ea3d6;
+  --accent-soft: #1c2c3f;
+  --signal: #e2894f;
+  --signal-soft: #33241a;
+  --good: #5fb583;
+  --good-soft: #16281e;
+}
+
+:root[data-theme="light"] {
+  --paper: #eef1f5;
+  --panel: #ffffff;
+  --ink: #182233;
+  --muted: #5c697b;
+  --line: #c6d0da;
+  --accent: #2f5d8a;
+  --accent-soft: #dde7f1;
+  --signal: #c8622d;
+  --signal-soft: #f7e6da;
+  --good: #3f7d58;
+  --good-soft: #e0efe5;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+}
+
+.mono, .value, .hero-value, table td, table th, input, select {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px 72px;
+}
+
+header {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.print-btn {
+  margin-top: 2px;
+  white-space: nowrap;
+  background: var(--accent);
+  color: var(--panel);
+  border: 1px solid var(--accent);
+}
+
+.print-only { display: none; }
+
+header h1 {
+  margin: 0 0 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.95rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.panel h3 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 24px 0 10px;
+}
+
+.badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--signal);
+  background: var(--signal-soft);
+  padding: 2px 8px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.87rem;
+  max-width: 78ch;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.wide-field {
+  grid-column: span 2;
+}
+
+.custom-hours {
+  display: none;
+  margin-top: 6px;
+}
+
+@media (max-width: 480px) {
+  .wide-field { grid-column: span 1; }
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  gap: 5px;
+}
+
+input, select {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 8px 10px;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+input:focus, select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.83rem;
+  white-space: nowrap;
+}
+
+th, td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+
+th {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--paper);
+}
+
+th:first-child, td:first-child {
+  text-align: left;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--muted);
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) td { background: var(--paper); }
+
+table input {
+  width: 64px;
+  padding: 4px 6px;
+  text-align: right;
+  font-size: 0.83rem;
+}
+
+button {
+  margin-top: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+button:hover { filter: brightness(1.08); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.hero {
+  margin-bottom: 18px;
+}
+
+.hero-figure {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--signal);
+  background: var(--signal-soft);
+  border-radius: 4px;
+  padding: 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+}
+
+.hero-figure.good {
+  border-left-color: var(--good);
+  background: var(--good-soft);
+}
+
+.hero-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  line-height: 1.3;
+  flex-basis: 100%;
+}
+
+.hero-value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--signal);
+}
+
+.hero-figure.good .hero-value { color: var(--good); }
+
+.hero-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px 16px;
+}
+
+.card .label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card .value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.card.good .value { color: var(--good); }
+.card.bad .value { color: var(--signal); }
+
+canvas {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  margin-top: 4px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sw {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.sw-cost { background: var(--accent); }
+.sw-equiv { background: var(--good); }
+.sw-loss { background: var(--signal); }
+
+.row-negative td { color: var(--signal); font-weight: 600; }
+
+#notes-panel ul {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+footer {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+  margin-top: 28px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+@media print {
+  @page {
+    margin: 1.4cm;
+  }
+
+  :root {
+    --paper: #ffffff;
+    --panel: #ffffff;
+    --ink: #182233;
+    --muted: #5c697b;
+    --line: #b7c1cc;
+    --accent: #2f5d8a;
+    --accent-soft: #dde7f1;
+    --signal: #c8622d;
+    --signal-soft: #f7e6da;
+    --good: #3f7d58;
+    --good-soft: #e0efe5;
+  }
+
+  body { background: #fff; }
+
+  .wrap { max-width: none; padding: 0; }
+
+  .print-btn,
+  #resetCurve,
+  .badge {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+
+  .print-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin-bottom: 3px;
+  }
+
+  .print-meta-row strong { color: var(--ink); }
+
+  .panel {
+    border: 1px solid var(--line);
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  input, select {
+    border: none;
+    background: transparent;
+    padding: 2px 0;
+    color: var(--ink);
+    font-weight: 700;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  table { font-size: 0.76rem; }
+
+  .table-scroll { overflow: visible; border: 1px solid var(--line); }
+
+  canvas {
+    border: 1px solid var(--line);
+  }
+
+  a[href]::after { content: ""; }
+}
